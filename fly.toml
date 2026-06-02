@@ -1,0 +1,22 @@
+# Fly.io config for the render worker. No public HTTP service — it just polls
+# the queue. Give it enough RAM/CPU for headless Chromium + ffmpeg.
+app = "6x7-demo-worker"
+primary_region = "fra"   # close to the eu-central Supabase
+
+[build]
+  dockerfile = "Dockerfile"
+
+[processes]
+  worker = "node worker.mjs"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "2gb"
+
+# Secrets (set with `fly secrets set ...`, never commit):
+#   DATABASE_URL                postgres connection string (Supabase → Settings → Database)
+#   SUPABASE_URL                https://fmrnqepyyjucnfbrqawl.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY   service_role key (storage upload)
+#   OPENROUTER_API_KEY          LLM narration (optional)
+#   OPENAI_API_KEY              premium TTS (optional)
+#   ELEVENLABS_API_KEY          premium TTS (optional)

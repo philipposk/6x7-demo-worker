@@ -1,0 +1,16 @@
+{
+  "name": "6x7-demo-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Render worker for demo.6x7.gr — polls demo.jobs, runs demo-pipeline / screenshot-grid against the target URL, uploads results to Supabase storage.",
+  "scripts": {
+    "start": "node worker.mjs",
+    "once": "node worker.mjs --once"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
+    "dotenv": "^17.4.2",
+    "pg": "^8.13.1"
+  }
+}
