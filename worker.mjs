@@ -8,13 +8,15 @@
 
 import "dotenv/config";
 import path from "node:path";
-import { claimJob, completeJob, failJob, pool } from "./lib/db.mjs";
+import { claimJob, claimJobById, completeJob, failJob, pool } from "./lib/db.mjs";
 import { ensureBucket, upload } from "./lib/storage.mjs";
 import { renderVideo } from "./render/video.mjs";
 import { renderScreenshots } from "./render/screenshots.mjs";
 
 const POLL_MS = Number(process.env.POLL_INTERVAL_MS || 5000);
 const once = process.argv.includes("--once");
+const jobFlag = process.argv.find((a) => a.startsWith("--job="));
+const jobId = jobFlag ? jobFlag.split("=")[1] : null;
 
 async function processJob(job) {
   console.log(`[job ${job.id}] ${job.service} · ${job.target_url}`);
@@ -43,8 +45,24 @@ async function tick() {
 
 async function main() {
   await ensureBucket();
-  console.log(`worker up · poll ${POLL_MS}ms · once=${once}`);
 
+  // Trigger model (GitHub Actions / serverless): render exactly one job by id.
+  if (jobId) {
+    const job = await claimJobById(jobId);
+    if (!job) { console.log(`job ${jobId} not found / not claimable`); await pool.end(); return; }
+    try {
+      await processJob(job);
+    } catch (err) {
+      console.error(`[job ${job.id}] failed:`, err.message);
+      await failJob(job.id, err.message);
+      await pool.end();
+      process.exit(1);
+    }
+    await pool.end();
+    return;
+  }
+
+  console.log(`worker up · poll ${POLL_MS}ms · once=${once}`);
   if (once) {
     await tick();
     await pool.end();
