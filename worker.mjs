@@ -8,7 +8,7 @@
 
 import "dotenv/config";
 import path from "node:path";
-import { claimJob, claimJobById, completeJob, failJob, pool } from "./lib/db.mjs";
+import { claimJob, claimJobById, completeJob, failJob, setProgress, pool } from "./lib/db.mjs";
 import { ensureBucket, upload } from "./lib/storage.mjs";
 import { renderVideo } from "./render/video.mjs";
 import { renderScreenshots } from "./render/screenshots.mjs";
@@ -20,11 +20,15 @@ const jobId = jobFlag ? jobFlag.split("=")[1] : null;
 
 async function processJob(job) {
   console.log(`[job ${job.id}] ${job.service} · ${job.target_url}`);
+  const onProgress = (stage) => { console.log(`  ${stage}`); setProgress(job.id, stage); };
+  await setProgress(job.id, "Starting up a render machine…");
+
   const { file } =
     job.service === "screenshots"
-      ? await renderScreenshots(job)
-      : await renderVideo(job);
+      ? await renderScreenshots(job, onProgress)
+      : await renderVideo(job, onProgress);
 
+  await setProgress(job.id, "Uploading your file…");
   const key = `${job.id}/${path.basename(file)}`;
   const url = await upload(file, key);
   await completeJob(job.id, url);

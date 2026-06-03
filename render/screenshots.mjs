@@ -13,8 +13,10 @@ const exec = promisify(execFile);
  * @param {object} job  demo.jobs row (target_url)
  * @returns {Promise<{file:string}>}
  */
-export async function renderScreenshots(job) {
+export async function renderScreenshots(job, onProgress = () => {}) {
+  onProgress("Preparing render tools…");
   await syncRepo("screenshots");
+  onProgress("Capturing screenshots…");
   const repo = dir("screenshots");
   const name = new URL(job.target_url).hostname.replace(/^www\./, "");
 
